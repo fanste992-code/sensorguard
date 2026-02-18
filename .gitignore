@@ -1,0 +1,76 @@
+############################
+# Python
+############################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+############################
+# Virtual Environments
+############################
+venv/
+.venv/
+env/
+ENV/
+
+############################
+# Environment / Secrets
+############################
+.env
+.env.*
+*.env
+
+############################
+# Database Files (Dev)
+############################
+*.db
+*.sqlite3
+*.sqlite
+*.bak
+sensorguard.db
+sensorguard.db.*
+pg-data/
+redis-data/
+
+############################
+# Logs
+############################
+*.log
+logs/
+*.out
+
+############################
+# Alembic cache
+############################
+alembic/versions/__pycache__/
+
+############################
+# Frontend (React)
+############################
+frontend/node_modules/
+node_modules/
+frontend/build/
+frontend/dist/
+build/
+dist/
+
+############################
+# OS Files
+############################
+.DS_Store
+Thumbs.db
+
+############################
+# VS Code
+############################
+.vscode/
+.history/
+
+###########################
