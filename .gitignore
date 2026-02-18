@@ -84,3 +84,8 @@ backend/var/reports/
 nul
 backend/=1.13.0
 
+backend/var/
+backend/var/reports/
+*.pdf
+
+
