@@ -1,0 +1,92 @@
+# SensorGuard Edge Collector Configuration
+# ==========================================
+#
+# This file configures the BACnet edge collector that runs on-site
+# and bridges your building automation system to SensorGuard cloud.
+
+# ── Cloud Connection ──────────────────────────────────────────────
+api_url: "https://api.sensorguard.io"  # SensorGuard API endpoint
+api_token: ""                           # Your JWT token (get from dashboard)
+building_id: 1                          # Building ID in SensorGuard
+
+# ── BACnet Network ────────────────────────────────────────────────
+bacnet_ip: "192.168.1.100/24"          # Collector's IP on BAS network
+bacnet_port: 47808                      # Standard BACnet/IP port (0xBAC0)
+
+# ── Behavior ──────────────────────────────────────────────────────
+poll_interval: 30.0      # Seconds between polls (if COV not supported)
+cov_lifetime: 300        # COV subscription lifetime in seconds
+use_cov: true            # Prefer COV over polling (recommended)
+push_interval: 10.0      # How often to push data to cloud (seconds)
+max_batch_size: 100      # Max readings per API call
+reconnect_delay: 30.0    # Wait before reconnecting on failure
+simulate: false      # If true, run without BACnet (dev/demo only)
+
+# ── Discovery ─────────────────────────────────────────────────────
+auto_discover: true      # Auto-discover devices on startup
+discovery_timeout: 10.0  # Seconds to wait for device responses
+
+# ── Point Configuration ───────────────────────────────────────────
+# 
+# Each point maps a BACnet object to a SensorGuard sensor pair.
+# 
+# Fields:
+#   name: Human-readable name (must match col_a or col_b in pair config)
+#   device_id: BACnet device instance number
+#   object_type: BACnet object type (analogInput, analogValue, etc.)
+#   object_instance: BACnet object instance number
+#   pair_role: "a" or "b" - which side of the sensor pair
+#   pair_name: Which pair this belongs to (matches pair config)
+#   cov_increment: (optional) Override default COV threshold
+#
+# Example for an AHU with:
+#   - Supply Air Temperature (SAT) sensor vs setpoint
+#   - Cooling valve command vs position feedback
+#
+points:
+  # ── AHU-1 Supply Air Temperature ──
+  - name: "AHU1_SAT"           # Measured SAT
+    device_id: 1001
+    object_type: "analogInput"
+    object_instance: 1
+    pair_role: "a"
+    pair_name: "AHU1_SAT_vs_SP"
+    cov_increment: 0.5         # Report changes > 0.5°F
+
+  - name: "AHU1_SAT_SP"        # SAT Setpoint
+    device_id: 1001
+    object_type: "analogValue"
+    object_instance: 1
+    pair_role: "b"
+    pair_name: "AHU1_SAT_vs_SP"
+
+  # ── AHU-1 Cooling Valve ──
+  - name: "AHU1_CLG_CMD"       # Valve command (0-100%)
+    device_id: 1001
+    object_type: "analogOutput"
+    object_instance: 1
+    pair_role: "a"
+    pair_name: "AHU1_CLG_Valve"
+    cov_increment: 1.0         # Report changes > 1%
+
+  - name: "AHU1_CLG_POS"       # Valve position feedback
+    device_id: 1001
+    object_type: "analogInput"
+    object_instance: 3
+    pair_role: "b"
+    pair_name: "AHU1_CLG_Valve"
+
+  # ── Chiller Plant ──
+  - name: "CHWS_TEMP"          # Chilled water supply temp
+    device_id: 1002
+    object_type: "analogInput"
+    object_instance: 1
+    pair_role: "a"
+    pair_name: "CHWS_vs_SP"
+
+  - name: "CHWS_SP"            # CHWS setpoint
+    device_id: 1002
+    object_type: "analogValue"
+    object_instance: 1
+    pair_role: "b"
+    pair_name: "CHWS_vs_SP"

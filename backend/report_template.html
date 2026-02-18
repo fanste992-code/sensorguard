@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SensorGuard Report</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; color: #333; font-size: 12px; }
+  h1 { color: #1a56db; border-bottom: 2px solid #1a56db; padding-bottom: 8px; font-size: 20px; }
+  h2 { color: #444; margin-top: 24px; font-size: 15px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  .meta { color: #666; font-size: 0.9em; margin-bottom: 16px; }
+  .meta span { margin-right: 20px; }
+  .analysis-info { background: #e8f0fe; padding: 10px 14px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #1a56db; font-size: 11px; }
+  .analysis-info span { margin-right: 16px; }
+  .summary { background: #f0f4ff; padding: 14px; border-radius: 6px; margin: 12px 0; }
+  .summary .stat { display: inline-block; margin-right: 36px; text-align: center; }
+  .summary .stat .value { font-size: 1.5em; font-weight: bold; color: #1a56db; }
+  .summary .stat .label { font-size: 0.8em; color: #666; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+  th { background: #1a56db; color: white; padding: 6px 10px; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) { background: #f9f9f9; }
+  .status-ok { color: #16a34a; font-weight: bold; }
+  .status-fault { color: #dc2626; font-weight: bold; }
+  .status-missing { color: #9333ea; font-weight: bold; }
+  .severity-fault { color: #dc2626; font-weight: bold; }
+  .severity-warning { color: #f59e0b; font-weight: bold; }
+  .coverage-box { background: #f8f8f8; padding: 10px 14px; border-radius: 6px; margin: 10px 0; border: 1px solid #e0e0e0; }
+  .coverage-box .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+  .coverage-box .cols { font-size: 10px; color: #555; margin-top: 4px; word-break: break-all; }
+  .missing-tag { display: inline-block; background: #fde8e8; color: #dc2626; padding: 1px 6px; border-radius: 3px; font-size: 10px; margin: 1px; }
+  .col-tag { display: inline-block; background: #e8f0fe; color: #1a56db; padding: 1px 6px; border-radius: 3px; font-size: 10px; margin: 1px; }
+  .footer { margin-top: 30px; font-size: 0.75em; color: #999; border-top: 1px solid #e0e0e0; padding-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>SensorGuard Fault Report</h1>
+  <div class="meta">
+    <span><strong>Building:</strong> {{ building_name }}</span>
+    {% if building_address %}<span>{{ building_address }}</span>{% endif %}
+    <span><strong>Generated:</strong> {{ generated_at }}</span>
+  </div>
+
+  {% if analysis %}
+  <div class="analysis-info">
+    <strong>Analysis Run #{{ analysis.id }}</strong>
+    <span><strong>Source:</strong> {{ analysis.source or 'csv' }}</span>
+    <span><strong>File:</strong> {{ analysis.filename }}</span>
+    {% if data_start %}<br><strong>Data window:</strong> {{ data_start }} to {{ data_end }}{% endif %}
+    <span><strong>Analyzed:</strong> {{ analysis.created_at.strftime('%Y-%m-%d %H:%M UTC') if analysis.created_at else 'N/A' }}</span>
+  </div>
+  {% endif %}
+
+  <div class="summary">
+    <div class="stat">
+      <div class="value">{{ total_faults }}</div>
+      <div class="label">Faults Detected</div>
+    </div>
+    {% if analysis %}
+    <div class="stat">
+      <div class="value">{{ analysis.total_ticks }}</div>
+      <div class="label">Total Ticks</div>
+    </div>
+    <div class="stat">
+      <div class="value">{{ "%.1f"|format(analysis.fault_rate * 100) }}%</div>
+      <div class="label">Fault Rate</div>
+    </div>
+    {% endif %}
+    <div class="stat">
+      <div class="value">{{ pairs_summary|length }}</div>
+      <div class="label">Sensor Pairs</div>
+    </div>
+  </div>
+
+  <!-- CSV Coverage Summary -->
+  {% if csv_columns %}
+  <h2>CSV Coverage Summary</h2>
+  <div class="coverage-box">
+    <div class="label">CSV Columns ({{ csv_columns|length }} total)</div>
+    <div class="cols">
+      {% for col in csv_columns[:30] %}<span class="col-tag">{{ col }}</span>{% endfor %}
+      {% if csv_columns|length > 30 %}<span class="col-tag">... +{{ csv_columns|length - 30 }} more</span>{% endif %}
+    </div>
+  </div>
+  {% if missing_columns %}
+  <div class="coverage-box" style="border-color: #dc2626;">
+    <div class="label" style="color: #dc2626;">Missing Columns ({{ missing_columns|length }} expected but not found in CSV)</div>
+    <div class="cols">
+      {% for col in missing_columns %}<span class="missing-tag">{{ col }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <!-- Sensor Pair Coverage Table -->
+  {% if pairs_summary %}
+  <h2>Sensor Pair Coverage</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Pair Name</th>
+        <th>Group</th>
+        <th>Col A</th>
+        <th>Col B</th>
+        <th>Status</th>
+        <th>Faults</th>
+        <th>OK</th>
+        <th>Fault Rate</th>
+        <th>Max Delta</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in pairs_summary %}
+      <tr>
+        <td>{{ p.name }}</td>
+        <td>{{ p.group }}</td>
+        <td style="font-size:10px;">{{ p.get('col_a', '') }}</td>
+        <td style="font-size:10px;">{{ p.get('col_b', '') }}</td>
+        <td class="status-{{ p.status|lower }}">{{ p.status }}</td>
+        <td>{{ p.fault_count }}</td>
+        <td>{{ p.ok_count }}</td>
+        <td>{{ p.fault_rate }}%</td>
+        <td>{{ p.max_delta if p.max_delta is not none else '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- Fault Details (filtered subset) -->
+  {% if faults %}
+  <h2>Fault Details</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Sensor Pair</th>
+        <th>Group</th>
+        <th>Severity</th>
+        <th>Diagnosis</th>
+        <th>Detected</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for f in faults %}
+      <tr>
+        <td>{{ f.pair_name }}</td>
+        <td>{{ f.group }}</td>
+        <td class="severity-{{ f.severity }}">{{ f.severity }}</td>
+        <td>{{ f.diagnosis }}</td>
+        <td>{{ f.detected_at }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="margin-top:16px;">No faults detected in this analysis run.</p>
+  {% endif %}
+
+  <div class="footer">
+    Report ID: {{ report_id }}{% if analysis %} | Analysis Run #{{ analysis.id }}{% endif %}{% if data_start %} | Data: {{ data_start }} to {{ data_end }}{% endif %} | Generated by SensorGuard
+  </div>
+</body>
+</html>
