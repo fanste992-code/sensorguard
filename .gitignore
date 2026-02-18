@@ -76,3 +76,11 @@ Thumbs.db
 ###########################
 README.md
 
+# Generated reports
+backend/var/
+backend/var/reports/
+
+# Random junk
+nul
+backend/=1.13.0
+
