@@ -125,6 +125,10 @@ app.add_middleware(CORSMiddleware, allow_origins=_origins, allow_credentials=_cr
 # Include live data router for real-time BACnet integration
 app.include_router(live_router, prefix="/api")
 
+@app.get("/")
+def root():
+    return {"status": "SensorGuard API is running"}
+
 # ── Request models ────────────────────────────────────────────────
 
 class SignupReq(BaseModel):
