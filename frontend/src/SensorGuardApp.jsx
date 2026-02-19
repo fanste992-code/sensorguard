@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const API = "http://localhost:8001";
+const API = import.meta.env.VITE_API_BASE_URL;
 const C = {
   bg: "#0a0a0c", card: "#111114", border: "rgba(255,255,255,0.08)",
   text: "#f5f5f7", dim: "#8e8e93", muted: "#636366",
