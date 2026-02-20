@@ -5,12 +5,12 @@
     "nixpacksPlan": {
       "phases": {
         "setup": {
-          "nixPkgs": ["nodejs_20", "npm"]
+          "nixPkgs": ["nodejs_20"]
         }
       }
     }
   },
   "deploy": {
-    "startCommand": "cd frontend && npx serve -s dist -l $PORT"
+    "startCommand": "cd frontend && npm run preview"
   }
 }
